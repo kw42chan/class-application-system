@@ -1,26 +1,90 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --border: #e2e5ea;
+  --foreground: #14171f;
+  --muted: #626b7b;
+  --brand: #4f46e5;
+  --brand-contrast: #ffffff;
+  --whatsapp: #1fa855;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0c0e13;
+    --surface: #14171e;
+    --surface-muted: #1b1f28;
+    --border: #272c37;
+    --foreground: #edeff3;
+    --muted: #9aa3b2;
+    --brand: #7c74ff;
+    --brand-contrast: #0c0e13;
+    --whatsapp: #25d366;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border: var(--border);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-brand: var(--brand);
+  --color-brand-contrast: var(--brand-contrast);
+  --color-whatsapp: var(--whatsapp);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-border bg-surface;
+  }
+
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-foreground;
+  }
+
+  .input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2 text-foreground
+           outline-none transition placeholder:text-muted/70
+           focus:border-brand focus:ring-2 focus:ring-brand/25;
+  }
+
+  /* Tailwind v4 can't @apply a custom class from the same layer, so the shared
+     button base is applied to every variant through one selector list. */
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  .btn-danger,
+  .btn-whatsapp {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2
+           text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-brand text-brand-contrast hover:opacity-90;
+  }
+
+  .btn-secondary {
+    @apply border border-border bg-surface text-foreground hover:bg-surface-muted;
+  }
+
+  .btn-danger {
+    @apply border border-red-500/40 bg-transparent text-red-600 hover:bg-red-500/10
+           dark:text-red-400;
+  }
+
+  .btn-whatsapp {
+    @apply bg-whatsapp text-white hover:opacity-90;
+  }
 }
