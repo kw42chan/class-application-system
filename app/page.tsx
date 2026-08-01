@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SeatMeter, StatusPill } from "@/components/class-status";
+import { StudentHeader } from "@/components/student-header";
 import {
   isAcceptingAnything,
   isAcceptingWaitlist,
@@ -70,22 +71,7 @@ export default async function StudentDashboard() {
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-      <header className="mb-10 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-            Class Applications
-          </h1>
-          <p className="mt-2 text-muted">
-            Browse the classes below and apply with your name and WhatsApp number.
-          </p>
-        </div>
-        <Link
-          href="/admin"
-          className="text-sm text-muted underline-offset-4 hover:underline"
-        >
-          Administrator
-        </Link>
-      </header>
+      <StudentHeader />
 
       {classes.length === 0 ? (
         <div className="card p-10 text-center">
