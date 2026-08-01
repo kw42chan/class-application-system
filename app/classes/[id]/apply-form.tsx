@@ -5,11 +5,12 @@ import Link from "next/link";
 import { submitApplication, type ApplyState } from "@/app/actions/apply";
 import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/form-buttons";
+import { useLanguage } from "@/lib/language-context";
 import { COUNTRIES, DEFAULT_COUNTRY } from "@/lib/phone";
 
 const INITIAL: ApplyState = { status: "idle" };
 
-function WithdrawNotice({ token }: { token: string }) {
+function WithdrawNotice({ token, t }: { token: string; t: (key: string) => string }) {
   const url =
     typeof window === "undefined"
       ? `/withdraw/${token}`
@@ -17,9 +18,9 @@ function WithdrawNotice({ token }: { token: string }) {
 
   return (
     <div className="mt-5 rounded-lg border border-border bg-surface-muted p-4">
-      <p className="text-sm font-medium">Can&rsquo;t make it later on?</p>
+      <p className="text-sm font-medium">{t('success.cantMakeLater')}</p>
       <p className="mt-1 text-xs text-muted">
-        Keep this link — it lets you release your place without messaging anyone.
+        {t('success.keepThisLink')}
       </p>
       <code className="mt-3 block truncate rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs">
         {url}
@@ -43,6 +44,7 @@ export function ApplyForm({
   classTitle: string;
   waitlistOnly: boolean;
 }) {
+  const { t } = useLanguage();
   const [state, formAction] = useActionState(submitApplication, INITIAL);
 
   if (state.status === "success") {
@@ -62,31 +64,27 @@ export function ApplyForm({
               : "text-emerald-700 dark:text-emerald-400"
           }`}
         >
-          {waitlisted ? "You're on the waitlist" : "You're on the list"}
+          {waitlisted ? t('success.waitlisted') : t('success.confirmed')}
         </h2>
 
         <p className="mt-2 text-sm">
           {waitlisted ? (
             <>
-              Thanks {state.name} — the class is full, so you&rsquo;re number{" "}
-              <strong>{state.position}</strong> in the queue for{" "}
-              <strong>{classTitle}</strong>. We&rsquo;ll message you on WhatsApp at{" "}
-              <span className="font-mono">{state.phoneDisplay}</span> if a seat
-              frees up.
+              {t('success.waitlistPosition')} <strong>{state.position}</strong> {t('success.inTheQueue')}{" "}
+              <strong>{classTitle}</strong>. {t('success.willMessageIfSeatFrees')}
             </>
           ) : (
             <>
-              Thanks {state.name} — your seat in <strong>{classTitle}</strong> is
-              reserved. We&rsquo;ll reach you on WhatsApp at{" "}
+              {t('success.seatReserved')} <strong>{classTitle}</strong> {t('success.isReserved')} {t('success.willReachYou')}{" "}
               <span className="font-mono">{state.phoneDisplay}</span>.
             </>
           )}
         </p>
 
-        <WithdrawNotice token={state.withdrawToken} />
+        <WithdrawNotice token={state.withdrawToken} t={t} />
 
         <Link href="/" className="btn-secondary mt-5">
-          Back to all classes
+          {t('btn.backToClasses')}
         </Link>
       </div>
     );
@@ -96,12 +94,12 @@ export function ApplyForm({
     <form action={formAction} className="card space-y-5 p-6">
       <div>
         <h2 className="text-lg font-semibold">
-          {waitlistOnly ? "Join the waitlist" : "Apply for a seat"}
+          {waitlistOnly ? t('class.joinWaitlist') : t('class.applyForThisClass')}
         </h2>
         <p className="mt-1 text-sm text-muted">
           {waitlistOnly
-            ? "This class is full. Join the queue and we'll message you on WhatsApp if a seat frees up."
-            : "The instructor will contact you on WhatsApp to confirm."}
+            ? t('success.willMessageIfSeatFrees')
+            : ""}
         </p>
       </div>
 
@@ -109,7 +107,7 @@ export function ApplyForm({
 
       <div>
         <label htmlFor="name" className="label">
-          Full name
+          {t('form.fullName')}
         </label>
         <input
           id="name"
@@ -125,7 +123,7 @@ export function ApplyForm({
 
       <div>
         <label htmlFor="phone" className="label">
-          WhatsApp number
+          {t('form.whatsappNumber')}
         </label>
         <div className="flex gap-2">
           <select
@@ -165,8 +163,8 @@ export function ApplyForm({
         </p>
       )}
 
-      <SubmitButton pendingLabel="Submitting…" className="btn-primary w-full">
-        {waitlistOnly ? "Join the waitlist" : "Submit application"}
+      <SubmitButton pendingLabel={t('form.apply')} className="btn-primary w-full">
+        {waitlistOnly ? t('class.joinWaitlist') : t('form.apply')}
       </SubmitButton>
     </form>
   );

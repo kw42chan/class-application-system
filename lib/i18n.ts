@@ -102,6 +102,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'error.sometingWentWrong': 'Something went wrong',
     'error.tryAgain': 'Try again in a moment.',
 
+    // Login
+    'login.title': 'Administrator Sign In',
+    'login.username': 'Username',
+    'login.password': 'Password',
+    'login.signIn': 'Sign in',
+    'login.failed': 'Login failed',
+    'login.tooManyAttempts': 'Too many login attempts. Please try again later.',
+
     // Settings
     'settings.language': 'Language',
   },
@@ -198,6 +206,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'error.alreadyApplied': '你已申請過此課程',
     'error.sometingWentWrong': '發生問題',
     'error.tryAgain': '請稍後重試。',
+
+    // Login
+    'login.title': '管理員登入',
+    'login.username': '使用者名稱',
+    'login.password': '密碼',
+    'login.signIn': '登入',
+    'login.failed': '登入失敗',
+    'login.tooManyAttempts': '登入嘗試次數過多。請稍後重試。',
 
     // Settings
     'settings.language': '語言',
