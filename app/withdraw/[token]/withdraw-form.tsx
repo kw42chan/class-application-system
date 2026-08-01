@@ -1,9 +1,10 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import Link from "next/link";
-import { submitWithdrawal, type WithdrawState } from "@/app/actions/withdraw";
-import { ConfirmSubmitButton } from "@/components/form-buttons";
+import { useActionState } from 'react';
+import Link from 'next/link';
+import { submitWithdrawal, type WithdrawState } from '@/app/actions/withdraw';
+import { ConfirmSubmitButton } from '@/components/form-buttons';
+import { useLanguage } from '@/lib/language-context';
 
 const INITIAL: WithdrawState = { status: "idle" };
 
@@ -18,21 +19,21 @@ export function WithdrawForm({
   name: string;
   waitlisted: boolean;
 }) {
+  const { t } = useLanguage();
   const [state, formAction] = useActionState(submitWithdrawal, INITIAL);
 
-  if (state.status === "done") {
+  if (state.status === 'done') {
     return (
       <div className="card border-emerald-500/40 bg-emerald-500/5 p-6 text-center">
         <h2 className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
-          Withdrawn
+          {t('withdraw.withdrawn')}
         </h2>
         <p className="mt-2 text-sm">
-          Thanks {state.name} — you&rsquo;ve been removed from{" "}
-          <strong>{state.classTitle}</strong>. Your place is now free for someone
-          else.
+          Thanks {state.name} — {t('withdraw.youveBeenRemoved')}{" "}
+          <strong>{state.classTitle}</strong>. {t('withdraw.yourPlaceIsFree')}
         </p>
         <Link href="/" className="btn-secondary mt-5">
-          Browse other classes
+          {t('class.browseOtherClasses')}
         </Link>
       </div>
     );
@@ -43,16 +44,15 @@ export function WithdrawForm({
       <input type="hidden" name="token" value={token} />
 
       <div>
-        <h2 className="text-lg font-semibold">Withdraw your application</h2>
+        <h2 className="text-lg font-semibold">{t('withdraw.title')}</h2>
         <p className="mt-2 text-sm text-muted">
-          {name}, you currently {waitlisted ? "hold a place in the queue" : "hold a seat"}{" "}
+          {name}, you currently {waitlisted ? t('withdraw.holdQueue') : t('withdraw.holdSeat')}{" "}
           for <strong className="text-foreground">{classTitle}</strong>.
-          Withdrawing frees it for someone else and cannot be undone — you would
-          need to apply again.
+          {t('withdraw.withdrawingFreesForOthers')}
         </p>
       </div>
 
-      {state.status === "error" && (
+      {state.status === 'error' && (
         <p
           role="alert"
           className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300"
@@ -63,13 +63,13 @@ export function WithdrawForm({
 
       <div className="flex flex-wrap gap-3">
         <ConfirmSubmitButton
-          confirmMessage={`Withdraw from "${classTitle}"? This cannot be undone.`}
-          pendingLabel="Withdrawing…"
+          confirmMessage={t('withdraw.confirmMessage').replace('%s', classTitle)}
+          pendingLabel={t('withdraw.withdrawing')}
         >
-          Yes, withdraw me
+          {t('withdraw.yesWithdrawMe')}
         </ConfirmSubmitButton>
         <Link href="/" className="btn-secondary">
-          Keep my place
+          {t('withdraw.keepMyPlace')}
         </Link>
       </div>
     </form>

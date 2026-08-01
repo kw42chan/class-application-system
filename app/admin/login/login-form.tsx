@@ -1,12 +1,14 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import { login, type FormState } from "@/app/actions/admin";
-import { SubmitButton } from "@/components/form-buttons";
+import { useActionState } from 'react';
+import { login, type FormState } from '@/app/actions/admin';
+import { SubmitButton } from '@/components/form-buttons';
+import { useLanguage } from '@/lib/language-context';
 
-const INITIAL: FormState = { status: "idle" };
+const INITIAL: FormState = { status: 'idle' };
 
 export function LoginForm({ next }: { next: string }) {
+  const { t } = useLanguage();
   const [state, formAction] = useActionState(login, INITIAL);
 
   return (
@@ -15,7 +17,7 @@ export function LoginForm({ next }: { next: string }) {
 
       <div>
         <label htmlFor="username" className="label">
-          Username
+          {t('login.username')}
         </label>
         <input
           id="username"
@@ -30,7 +32,7 @@ export function LoginForm({ next }: { next: string }) {
 
       <div>
         <label htmlFor="password" className="label">
-          Password
+          {t('login.password')}
         </label>
         <input
           id="password"
@@ -42,7 +44,7 @@ export function LoginForm({ next }: { next: string }) {
         />
       </div>
 
-      {state.status === "error" && (
+      {state.status === 'error' && (
         <p
           role="alert"
           className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-sm text-red-700 dark:text-red-300"
@@ -51,8 +53,8 @@ export function LoginForm({ next }: { next: string }) {
         </p>
       )}
 
-      <SubmitButton pendingLabel="Signing in…" className="btn-primary w-full">
-        Sign in
+      <SubmitButton pendingLabel={t('login.signingIn')} className="btn-primary w-full">
+        {t('login.signIn')}
       </SubmitButton>
     </form>
   );

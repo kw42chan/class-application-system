@@ -1,4 +1,4 @@
-import { isAcceptingWaitlist, seatsLeft, type ClassRecord } from "@/lib/classes";
+import { isAcceptingWaitlist, seatsLeft, type ClassRecord } from "@/lib/class-utils";
 
 export function StatusPill({ cls }: { cls: ClassRecord }) {
   const left = seatsLeft(cls);

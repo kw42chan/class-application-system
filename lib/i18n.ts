@@ -25,6 +25,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.open': 'OPEN FOR APPLICATIONS',
     'dashboard.notOpen': 'NOT CURRENTLY OPEN',
     'dashboard.browseOtherClasses': 'Browse other classes',
+    'dashboard.noClassesPublished': 'No classes have been published yet.',
+    'dashboard.checkBackLater': 'Please check back a little later.',
+    'dashboard.noClassesOpen': 'No classes are open for applications right now.',
+    'dashboard.viewDetails': 'View details',
 
     // Class detail
     'class.instructor': 'Instructor',
@@ -37,6 +41,12 @@ export const translations: Record<Language, Record<string, string>> = {
     'class.isFull': 'This class is full.',
     'class.joinWaitlist': 'Join the waitlist',
     'class.applyForThisClass': 'Apply for this class',
+    'class.backToAllClasses': 'Back to all classes',
+    'class.checkBack': 'Check the dashboard for classes that are currently open.',
+    'class.allSeatsLeft': 'All',
+    'class.browseOtherClasses': 'Browse other classes',
+    'class.onlySeatsLeft': 'Only',
+    'class.seatsLeftWarning': 'seat(s) left.',
 
     // Apply form
     'form.fullName': 'Full name',
@@ -64,6 +74,14 @@ export const translations: Record<Language, Record<string, string>> = {
     'withdraw.withdrawingFreesForOthers': 'Withdrawing frees it for someone else and cannot be undone — you would need to apply again.',
     'withdraw.alreadyWithdrawn': 'Already withdrawn',
     'withdraw.youreNoLongerSignedUp': "you're no longer signed up for",
+    'withdraw.withdrawn': 'Withdrawn',
+    'withdraw.youveBeenRemoved': "you've been removed from",
+    'withdraw.yourPlaceIsFree': 'Your place is now free for someone else.',
+    'withdraw.confirmMessage': 'Withdraw from "%s"? This cannot be undone.',
+    'withdraw.withdrawing': 'Withdrawing…',
+    'withdraw.yesWithdrawMe': 'Yes, withdraw me',
+    'withdraw.keepMyPlace': 'Keep my place',
+    'withdraw.browseClasses': 'Browse classes',
 
     // Admin
     'admin.createClass': '+ New class',
@@ -76,6 +94,67 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.administratorAdded': 'Administrator added.',
     'admin.administratorRemoved': 'Administrator removed.',
     'admin.passwordChanged': 'Password changed.',
+
+    // Admin dashboard
+    'admin.classes': 'Classes',
+    'admin.class': 'class',
+    'admin.classPlural': 'classes',
+    'admin.applicant': 'applicant',
+    'admin.applicantPlural': 'applicants',
+    'admin.inTotal': 'in total',
+    'admin.noClassesYet': 'No classes yet',
+    'admin.createFirstClass': 'Create your first class to start collecting applications.',
+    'admin.tableClass': 'Class',
+    'admin.tableStatus': 'Status',
+    'admin.tableApplicants': 'Applicants',
+    'admin.tableActions': 'Actions',
+    'admin.full': 'full',
+    'admin.left': 'left',
+    'admin.waiting': 'waiting',
+    'admin.openClass': 'Open',
+    'admin.closeClass': 'Close',
+    'admin.manage': 'Manage',
+
+    // Team page
+    'admin.team': 'Team',
+    'admin.administrator': 'administrator',
+    'admin.administratorPlural': 'administrators',
+    'admin.teamDescription': 'Everyone here has full access, and their actions are recorded in Activity.',
+    'admin.tableUsername': 'Username',
+    'admin.tableAdded': 'Added',
+    'admin.tableAddedBy': 'Added by',
+    'admin.you': 'you',
+    'admin.removeAdmin': 'Remove',
+    'admin.removeAdminConfirm': 'Remove administrator "%s"? They will lose access immediately.',
+    'admin.cantRemoveSelf': "You can't remove your own account while signed in.",
+
+    // Activity page
+    'admin.activity': 'Activity',
+    'admin.activityDescription': 'Who changed what.',
+    'admin.event': 'event',
+    'admin.eventPlural': 'events',
+    'admin.recorded': 'recorded',
+    'admin.noActivity': 'Nothing recorded yet. Administrator actions will show up here.',
+    'admin.tableWhen': 'When',
+    'admin.tableWho': 'Who',
+    'admin.tableAction': 'Action',
+    'admin.tableDetails': 'Details',
+    'admin.actionDeletedClass': 'deleted class',
+    'admin.actionDeletedApplicant': 'deleted applicant',
+    'admin.actionRemovedAdministrator': 'removed administrator',
+    'admin.actionCreatedClass': 'created class',
+    'admin.actionAddedAdministrator': 'added administrator',
+    'admin.actionPromotedFromWaitlist': 'promoted from waitlist',
+
+    // Class detail/management
+    'admin.allClasses': 'All classes',
+    'admin.created': 'Created',
+    'admin.seated': 'seated',
+    'admin.cancelled': 'cancelled',
+    'admin.downloadCSV': 'Download CSV',
+    'admin.couldntGiveSeat': "Couldn't give that applicant a seat — the class is already at its limit. Raise the limit or cancel someone else first.",
+    'admin.deleteClass': 'Delete class',
+    'admin.deleteClassConfirm': 'Delete this class? All applicants will be notified. This cannot be undone.',
 
     // Buttons
     'btn.download': 'Download CSV',
@@ -104,11 +183,19 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Login
     'login.title': 'Administrator Sign In',
+    'login.subtitle': "Students don't need an account — this is for class management only.",
+    'login.backToDashboard': 'Back to the class dashboard',
     'login.username': 'Username',
     'login.password': 'Password',
     'login.signIn': 'Sign in',
+    'login.signingIn': 'Signing in…',
     'login.failed': 'Login failed',
     'login.tooManyAttempts': 'Too many login attempts. Please try again later.',
+
+    // Withdrawal
+    'withdraw.invalidLink': "This link isn't valid",
+    'withdraw.linkAlreadyUsed': 'It may have already been used, or the class may have been removed.',
+    'withdraw.viewTheClass': 'View the class',
 
     // Settings
     'settings.language': 'Language',
@@ -130,6 +217,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'dashboard.open': '接受申請',
     'dashboard.notOpen': '暫不接受申請',
     'dashboard.browseOtherClasses': '瀏覽其他課程',
+    'dashboard.noClassesPublished': '還沒有發佈課程。',
+    'dashboard.checkBackLater': '請稍後再次查看。',
+    'dashboard.noClassesOpen': '目前沒有課程接受申請。',
+    'dashboard.viewDetails': '查看詳情',
 
     // Class detail
     'class.instructor': '講師',
@@ -142,6 +233,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'class.isFull': '此課程已滿。',
     'class.joinWaitlist': '加入候補名單',
     'class.applyForThisClass': '申請此課程',
+    'class.backToAllClasses': '返回課程',
+    'class.checkBack': '檢查儀表板以查找當前開放的課程。',
+    'class.onlySeatsLeft': '只有',
+    'class.seatsLeftWarning': '個名額。',
 
     // Apply form
     'form.fullName': '全名',
@@ -182,6 +277,67 @@ export const translations: Record<Language, Record<string, string>> = {
     'admin.administratorRemoved': '管理員已移除。',
     'admin.passwordChanged': '密碼已變更。',
 
+    // Admin dashboard (zh-TW)
+    'admin.classes': '課程',
+    'admin.class': '課程',
+    'admin.classPlural': '課程',
+    'admin.applicant': '報名者',
+    'admin.applicantPlural': '報名者',
+    'admin.inTotal': '共',
+    'admin.noClassesYet': '還沒有課程',
+    'admin.createFirstClass': '建立第一個課程以開始收集報名。',
+    'admin.tableClass': '課程',
+    'admin.tableStatus': '狀態',
+    'admin.tableApplicants': '報名者',
+    'admin.tableActions': '操作',
+    'admin.full': '已滿',
+    'admin.left': '個名額',
+    'admin.waiting': '個待補',
+    'admin.openClass': '開放',
+    'admin.closeClass': '關閉',
+    'admin.manage': '管理',
+
+    // Team page (zh-TW)
+    'admin.team': '團隊',
+    'admin.administrator': '管理員',
+    'admin.administratorPlural': '管理員',
+    'admin.teamDescription': '這裡的每個人都有完全的訪問權限，他們的操作會被記錄在活動日誌中。',
+    'admin.tableUsername': '使用者名稱',
+    'admin.tableAdded': '新增於',
+    'admin.tableAddedBy': '新增者',
+    'admin.you': '你',
+    'admin.removeAdmin': '移除',
+    'admin.removeAdminConfirm': '移除管理員"%s"？他們將立即失去訪問權限。',
+    'admin.cantRemoveSelf': '你無法在登入時移除你自己的帳戶。',
+
+    // Activity page (zh-TW)
+    'admin.activity': '活動日誌',
+    'admin.activityDescription': '誰修改了什麼。',
+    'admin.event': '筆',
+    'admin.eventPlural': '筆',
+    'admin.recorded': '個事件已記錄',
+    'admin.noActivity': '尚無記錄。管理員的操作將顯示在這裡。',
+    'admin.tableWhen': '時間',
+    'admin.tableWho': '誰',
+    'admin.tableAction': '操作',
+    'admin.tableDetails': '詳情',
+    'admin.actionDeletedClass': '刪除課程',
+    'admin.actionDeletedApplicant': '刪除報名者',
+    'admin.actionRemovedAdministrator': '移除管理員',
+    'admin.actionCreatedClass': '建立課程',
+    'admin.actionAddedAdministrator': '新增管理員',
+    'admin.actionPromotedFromWaitlist': '從待補提升到確認',
+
+    // Class detail/management (zh-TW)
+    'admin.allClasses': '所有課程',
+    'admin.created': '建立於',
+    'admin.seated': '個已確認',
+    'admin.cancelled': '個已取消',
+    'admin.downloadCSV': '下載 CSV',
+    'admin.couldntGiveSeat': '無法給該報名者一個位置 — 課程已達到容量限制。提高容量或先取消其他人的報名。',
+    'admin.deleteClass': '刪除課程',
+    'admin.deleteClassConfirm': '刪除此課程？所有報名者將被通知。此操作無法撤銷。',
+
     // Buttons
     'btn.download': '下載 CSV',
     'btn.cancel': '取消',
@@ -209,11 +365,27 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Login
     'login.title': '管理員登入',
+    'login.subtitle': '學生不需要帳戶 — 這只是用於課程管理。',
+    'login.backToDashboard': '返回課程儀表板',
     'login.username': '使用者名稱',
     'login.password': '密碼',
     'login.signIn': '登入',
+    'login.signingIn': '正在登入…',
     'login.failed': '登入失敗',
     'login.tooManyAttempts': '登入嘗試次數過多。請稍後重試。',
+
+    // Withdrawal (zh-TW)
+    'withdraw.invalidLink': '此連結無效',
+    'withdraw.linkAlreadyUsed': '它可能已被使用，或課程可能已被移除。',
+    'withdraw.viewTheClass': '查看課程',
+    'withdraw.withdrawn': '已退出',
+    'withdraw.youveBeenRemoved': '你已被移除於',
+    'withdraw.yourPlaceIsFree': '你的名額現在已釋放給他人。',
+    'withdraw.confirmMessage': '從"%s"退出？此操作無法撤銷。',
+    'withdraw.withdrawing': '正在退出…',
+    'withdraw.yesWithdrawMe': '是的，請讓我退出',
+    'withdraw.keepMyPlace': '保持我的名額',
+    'withdraw.browseClasses': '瀏覽課程',
 
     // Settings
     'settings.language': '語言',

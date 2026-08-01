@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useActionState } from "react";
-import Link from "next/link";
-import { saveClass, type FormState } from "@/app/actions/admin";
-import { SubmitButton } from "@/components/form-buttons";
-import type { ClassRecord } from "@/lib/classes";
+import { useActionState } from 'react';
+import Link from 'next/link';
+import { saveClass, type FormState } from '@/app/actions/admin';
+import { SubmitButton } from '@/components/form-buttons';
+import type { ClassRecord } from '@/lib/class-utils';
 
 const INITIAL: FormState = { status: "idle" };
 
