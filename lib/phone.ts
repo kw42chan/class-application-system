@@ -1,60 +1,125 @@
-export type Country = { code: string; name: string; flag: string };
+import {
+  getCountryCallingCode,
+  isSupportedCountry,
+  parsePhoneNumberFromString,
+  type CountryCode,
+} from "libphonenumber-js";
 
-/** Country dialling codes offered in the application form. */
-export const COUNTRIES: Country[] = [
-  { code: "60", name: "Malaysia", flag: "🇲🇾" },
-  { code: "65", name: "Singapore", flag: "🇸🇬" },
-  { code: "62", name: "Indonesia", flag: "🇮🇩" },
-  { code: "66", name: "Thailand", flag: "🇹🇭" },
-  { code: "63", name: "Philippines", flag: "🇵🇭" },
-  { code: "84", name: "Vietnam", flag: "🇻🇳" },
-  { code: "673", name: "Brunei", flag: "🇧🇳" },
-  { code: "852", name: "Hong Kong", flag: "🇭🇰" },
-  { code: "886", name: "Taiwan", flag: "🇹🇼" },
-  { code: "86", name: "China", flag: "🇨🇳" },
-  { code: "91", name: "India", flag: "🇮🇳" },
-  { code: "61", name: "Australia", flag: "🇦🇺" },
-  { code: "64", name: "New Zealand", flag: "🇳🇿" },
-  { code: "44", name: "United Kingdom", flag: "🇬🇧" },
-  { code: "1", name: "USA / Canada", flag: "🇺🇸" },
+export type Country = {
+  iso: string;
+  name: string;
+  flag: string;
+  callingCode: string;
+};
+
+/** Regional-indicator letters render as a flag: "MY" -> 🇲🇾. */
+function flagFor(iso: string): string {
+  return String.fromCodePoint(
+    ...[...iso.toUpperCase()].map((c) => 0x1f1e6 + c.charCodeAt(0) - 65),
+  );
+}
+
+const COUNTRY_NAMES: [string, string][] = [
+  ["MY", "Malaysia"],
+  ["SG", "Singapore"],
+  ["HK", "Hong Kong"],
+  ["TW", "Taiwan"],
+  ["CN", "China"],
+  ["ID", "Indonesia"],
+  ["TH", "Thailand"],
+  ["PH", "Philippines"],
+  ["VN", "Vietnam"],
+  ["BN", "Brunei"],
+  ["IN", "India"],
+  ["JP", "Japan"],
+  ["KR", "South Korea"],
+  ["AU", "Australia"],
+  ["NZ", "New Zealand"],
+  ["GB", "United Kingdom"],
+  ["US", "United States"],
+  ["CA", "Canada"],
+  ["AE", "United Arab Emirates"],
 ];
 
-export const DEFAULT_COUNTRY_CODE =
-  process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE ?? "60";
+export const COUNTRIES: Country[] = COUNTRY_NAMES.filter(([iso]) =>
+  isSupportedCountry(iso),
+).map(([iso, name]) => ({
+  iso,
+  name,
+  flag: flagFor(iso),
+  callingCode: getCountryCallingCode(iso as CountryCode),
+}));
+
+/** Older installs configured a dialling code; map the common ones to ISO. */
+const LEGACY_CODE_TO_ISO: Record<string, string> = {
+  "60": "MY",
+  "65": "SG",
+  "852": "HK",
+  "886": "TW",
+  "86": "CN",
+  "62": "ID",
+  "66": "TH",
+  "63": "PH",
+  "84": "VN",
+  "91": "IN",
+  "61": "AU",
+  "44": "GB",
+  "1": "US",
+};
+
+function resolveDefaultCountry(): string {
+  const explicit = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY?.toUpperCase();
+  if (explicit && isSupportedCountry(explicit)) return explicit;
+
+  const legacy = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE;
+  if (legacy && LEGACY_CODE_TO_ISO[legacy]) return LEGACY_CODE_TO_ISO[legacy];
+
+  return "MY";
+}
+
+export const DEFAULT_COUNTRY = resolveDefaultCountry();
 
 export type ParsedPhone = { e164: string; display: string };
 
+const INVALID =
+  "That WhatsApp number doesn't look right for the country you picked. Check the digits.";
+
 /**
- * Turns a country dialling code plus a locally-typed number into the digits-only
- * form WhatsApp expects. Local trunk prefixes ("0" in MY/SG/UK/AU, "1" for
- * US/Canada long distance) are dropped, as are spaces, dashes and brackets.
+ * Validates a number against the selected country's real numbering rules, so a
+ * typo is rejected here rather than becoming a dead wa.me link later.
+ *
+ * The country acts as a default only: a number typed with an explicit "+"
+ * prefix keeps its own country. National trunk prefixes (a leading 0 in MY, SG,
+ * GB, AU) are handled by the parser.
  */
 export function parsePhone(
-  countryCode: string,
+  country: string,
   localNumber: string,
 ): ParsedPhone | { error: string } {
-  const cc = countryCode.replace(/\D/g, "");
-  if (!cc) return { error: "Please choose a country code." };
-
-  let local = localNumber.replace(/\D/g, "");
-  if (!local) return { error: "Please enter your WhatsApp number." };
-
-  // People often paste the full international number into the local field.
-  if (local.startsWith(cc) && local.length > cc.length + 5) {
-    local = local.slice(cc.length);
-  }
-  local = local.replace(/^0+/, "");
-
-  if (local.length < 6 || local.length > 13) {
-    return { error: "That WhatsApp number doesn't look right. Check the digits." };
+  const iso = country.trim().toUpperCase();
+  if (!iso || !isSupportedCountry(iso)) {
+    return { error: "Please choose a country." };
   }
 
-  const e164 = cc + local;
-  if (e164.length < 8 || e164.length > 15) {
-    return { error: "That WhatsApp number doesn't look right. Check the digits." };
+  const raw = localNumber.trim();
+  if (!raw) return { error: "Please enter your WhatsApp number." };
+  if (!/\d/.test(raw)) return { error: INVALID };
+
+  const parsed = parsePhoneNumberFromString(raw, iso as CountryCode);
+  if (!parsed || !parsed.isValid()) return { error: INVALID };
+
+  // WhatsApp cannot be reached on a fixed line.
+  const type = parsed.getType();
+  if (type === "FIXED_LINE") {
+    return {
+      error: "That looks like a landline. Please enter a mobile number for WhatsApp.",
+    };
   }
 
-  return { e164, display: `+${cc} ${local}` };
+  return {
+    e164: parsed.number.replace(/\D/g, ""),
+    display: parsed.formatInternational(),
+  };
 }
 
 /** Deep link that opens a chat with this number in WhatsApp. */

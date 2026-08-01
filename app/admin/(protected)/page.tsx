@@ -72,6 +72,11 @@ export default async function AdminClassesPage() {
                       <span className="ml-2 text-xs text-muted">
                         {left === 0 ? "full" : `${left} left`}
                       </span>
+                      {cls.waitlistCount > 0 && (
+                        <span className="ml-2 rounded-full bg-sky-500/15 px-2 py-0.5 text-xs text-sky-700 dark:text-sky-400">
+                          +{cls.waitlistCount} waiting
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex justify-end gap-2">

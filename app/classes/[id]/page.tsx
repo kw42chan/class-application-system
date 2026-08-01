@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeatMeter, StatusPill } from "@/components/class-status";
-import { getClass, isAcceptingApplications, seatsLeft } from "@/lib/classes";
+import {
+  getClass,
+  isAcceptingApplications,
+  isAcceptingAnything,
+  isAcceptingWaitlist,
+  seatsLeft,
+} from "@/lib/classes";
 import { ApplyForm } from "./apply-form";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +25,9 @@ export default async function ClassDetailPage({
   if (!cls) notFound();
 
   const canApply = isAcceptingApplications(cls);
+  const waitlistOnly = isAcceptingWaitlist(cls);
+  const showForm = isAcceptingAnything(cls);
+
   const details = [
     cls.instructor && { label: "Instructor", value: cls.instructor },
     cls.schedule && { label: "When", value: cls.schedule },
@@ -27,10 +36,7 @@ export default async function ClassDetailPage({
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
-      <Link
-        href="/"
-        className="text-sm text-muted underline-offset-4 hover:underline"
-      >
+      <Link href="/" className="text-sm text-muted underline-offset-4 hover:underline">
         &larr; All classes
       </Link>
 
@@ -59,8 +65,12 @@ export default async function ClassDetailPage({
       </div>
 
       <div className="mt-6">
-        {canApply ? (
-          <ApplyForm classId={cls.id} classTitle={cls.title} />
+        {showForm ? (
+          <ApplyForm
+            classId={cls.id}
+            classTitle={cls.title}
+            waitlistOnly={waitlistOnly}
+          />
         ) : (
           <div className="card p-6 text-center">
             <p className="font-medium">

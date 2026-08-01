@@ -35,16 +35,26 @@ export async function GET(
 
   const applications = await listApplications(classId);
 
+  let seatNumber = 0;
+  let queueNumber = 0;
+
   const rows = [
-    ["Name", "WhatsApp", "WhatsApp link", "Status", "Applied at (UTC)"],
-    ...applications.map((a) => [
-      a.name,
-      // Leading apostrophe keeps Excel from mangling the "+" into a formula.
-      `'${a.phoneDisplay}`,
-      `https://wa.me/${a.phoneE164}`,
-      a.status,
-      a.createdAt,
-    ]),
+    ["Position", "Name", "WhatsApp", "WhatsApp link", "Status", "Applied at (UTC)"],
+    ...applications.map((a) => {
+      let position = "—";
+      if (a.status === "confirmed") position = String(++seatNumber);
+      else if (a.status === "waitlisted") position = `Waitlist ${++queueNumber}`;
+
+      return [
+        position,
+        a.name,
+        // Leading apostrophe keeps Excel from mangling the "+" into a formula.
+        `'${a.phoneDisplay}`,
+        `https://wa.me/${a.phoneE164}`,
+        a.status,
+        a.createdAt,
+      ];
+    }),
   ];
 
   // The BOM makes Excel read the file as UTF-8.

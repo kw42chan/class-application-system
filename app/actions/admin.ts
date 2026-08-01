@@ -3,6 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  countAdmins,
+  createAdmin,
+  deleteAdmin,
+  findAdminByUsername,
+  setAdminPassword,
+} from "@/lib/admins";
+import { recordAudit } from "@/lib/audit";
+import {
   endSession,
   loginLockoutRemainingMs,
   requireAdmin,
@@ -10,10 +18,12 @@ import {
   verifyCredentials,
 } from "@/lib/auth";
 import {
+  cancelApplication,
+  confirmApplication,
   createClass,
   deleteApplication,
   deleteClass,
-  setApplicationStatus,
+  getClass,
   setClassOpen,
   updateClass,
   type ClassInput,
@@ -28,6 +38,15 @@ function safeNext(value: string | null): string {
   }
   return value;
 }
+
+function refreshClass(id: number) {
+  revalidatePath("/");
+  revalidatePath(`/classes/${id}`);
+  revalidatePath("/admin");
+  revalidatePath(`/admin/classes/${id}`);
+}
+
+// --- Session --------------------------------------------------------------
 
 export async function login(
   _prevState: FormState,
@@ -50,9 +69,9 @@ export async function login(
     };
   }
 
-  let ok: boolean;
+  let result: Awaited<ReturnType<typeof verifyCredentials>>;
   try {
-    ok = await verifyCredentials(username, password);
+    result = await verifyCredentials(username, password);
   } catch (error) {
     return {
       status: "error",
@@ -60,11 +79,22 @@ export async function login(
     };
   }
 
-  if (!ok) {
+  if (!result.ok) {
+    if ((await countAdmins()) === 0) {
+      return {
+        status: "error",
+        message: "No administrator account exists yet. Run `npm run setup` to create one.",
+      };
+    }
     return { status: "error", message: "Incorrect username or password." };
   }
 
-  await startSession(username);
+  await startSession(result.username);
+  await recordAudit({
+    actor: result.username,
+    action: "signed in",
+    entityType: "session",
+  });
   redirect(next);
 }
 
@@ -73,10 +103,11 @@ export async function logout(): Promise<void> {
   redirect("/admin/login");
 }
 
+// --- Classes --------------------------------------------------------------
+
 function readClassInput(formData: FormData): ClassInput | { error: string } {
   const title = String(formData.get("title") ?? "").trim();
-  const capacityRaw = String(formData.get("capacity") ?? "").trim();
-  const capacity = Number(capacityRaw);
+  const capacity = Number(String(formData.get("capacity") ?? "").trim());
 
   if (title.length < 2) return { error: "Give the class a title." };
   if (title.length > 120) return { error: "Title is too long (120 characters max)." };
@@ -92,6 +123,7 @@ function readClassInput(formData: FormData): ClassInput | { error: string } {
     schedule: String(formData.get("schedule") ?? "").trim().slice(0, 200),
     capacity,
     isOpen: formData.get("isOpen") === "on",
+    waitlistEnabled: formData.get("waitlistEnabled") === "on",
   };
 }
 
@@ -99,7 +131,7 @@ export async function saveClass(
   _prevState: FormState,
   formData: FormData,
 ): Promise<FormState> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const parsed = readClassInput(formData);
   if ("error" in parsed) return { status: "error", message: parsed.error };
@@ -112,70 +144,206 @@ export async function saveClass(
       return { status: "error", message: "Unknown class." };
     }
     await updateClass(id, parsed);
-    revalidatePath("/");
-    revalidatePath(`/classes/${id}`);
-    revalidatePath("/admin");
-    revalidatePath(`/admin/classes/${id}`);
+    await recordAudit({
+      actor: session.username,
+      action: "updated class",
+      entityType: "class",
+      entityId: id,
+      summary: parsed.title,
+    });
+    refreshClass(id);
     redirect(`/admin/classes/${id}?saved=1`);
   }
 
   const newId = await createClass(parsed);
+  await recordAudit({
+    actor: session.username,
+    action: "created class",
+    entityType: "class",
+    entityId: newId,
+    summary: parsed.title,
+  });
   revalidatePath("/");
   revalidatePath("/admin");
   redirect(`/admin/classes/${newId}?created=1`);
 }
 
 export async function toggleClassOpen(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
   const id = Number(formData.get("id"));
   const open = formData.get("open") === "1";
   if (!Number.isInteger(id) || id <= 0) return;
 
   await setClassOpen(id, open);
-  revalidatePath("/");
-  revalidatePath(`/classes/${id}`);
-  revalidatePath("/admin");
-  revalidatePath(`/admin/classes/${id}`);
+  const cls = await getClass(id);
+  await recordAudit({
+    actor: session.username,
+    action: open ? "opened applications" : "closed applications",
+    entityType: "class",
+    entityId: id,
+    summary: cls?.title ?? "",
+  });
+  refreshClass(id);
 }
 
 export async function removeClass(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
   const id = Number(formData.get("id"));
   if (!Number.isInteger(id) || id <= 0) return;
 
+  const cls = await getClass(id);
   await deleteClass(id);
+  await recordAudit({
+    actor: session.username,
+    action: "deleted class",
+    entityType: "class",
+    entityId: id,
+    summary: cls ? `${cls.title} (${cls.applicantCount} applicants)` : "",
+  });
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/admin");
 }
 
-export async function changeApplicationStatus(formData: FormData): Promise<void> {
-  await requireAdmin();
+// --- Applications ---------------------------------------------------------
+
+export async function cancelApplicationAction(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
   const id = Number(formData.get("id"));
   const classId = Number(formData.get("classId"));
-  const status = formData.get("status") === "cancelled" ? "cancelled" : "confirmed";
+  const name = String(formData.get("name") ?? "");
   if (!Number.isInteger(id) || id <= 0) return;
 
-  const result = await setApplicationStatus(id, status);
-  revalidatePath("/");
-  revalidatePath(`/classes/${classId}`);
-  revalidatePath("/admin");
-  revalidatePath(`/admin/classes/${classId}`);
+  await cancelApplication(id);
+  await recordAudit({
+    actor: session.username,
+    action: "cancelled applicant",
+    entityType: "application",
+    entityId: id,
+    summary: name,
+  });
+  refreshClass(classId);
+}
+
+/** Restores a cancelled applicant, or promotes one off the waitlist. */
+export async function confirmApplicationAction(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const id = Number(formData.get("id"));
+  const classId = Number(formData.get("classId"));
+  const name = String(formData.get("name") ?? "");
+  const wasWaitlisted = formData.get("from") === "waitlisted";
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  const result = await confirmApplication(id);
+  refreshClass(classId);
 
   if (!result.ok) {
     redirect(`/admin/classes/${classId}?error=full`);
   }
+
+  await recordAudit({
+    actor: session.username,
+    action: wasWaitlisted ? "promoted from waitlist" : "restored applicant",
+    entityType: "application",
+    entityId: id,
+    summary: name,
+  });
+  redirect(`/admin/classes/${classId}?promoted=${wasWaitlisted ? "1" : "0"}`);
 }
 
 export async function removeApplication(formData: FormData): Promise<void> {
-  await requireAdmin();
+  const session = await requireAdmin();
   const id = Number(formData.get("id"));
   const classId = Number(formData.get("classId"));
+  const name = String(formData.get("name") ?? "");
   if (!Number.isInteger(id) || id <= 0) return;
 
   await deleteApplication(id);
-  revalidatePath("/");
-  revalidatePath(`/classes/${classId}`);
-  revalidatePath("/admin");
-  revalidatePath(`/admin/classes/${classId}`);
+  await recordAudit({
+    actor: session.username,
+    action: "deleted applicant",
+    entityType: "application",
+    entityId: id,
+    summary: name,
+  });
+  refreshClass(classId);
+}
+
+// --- Administrator accounts ----------------------------------------------
+
+export async function addAdmin(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await requireAdmin();
+  const username = String(formData.get("username") ?? "");
+  const password = String(formData.get("password") ?? "");
+
+  const result = await createAdmin(username, password, session.username);
+  if (!result.ok) return { status: "error", message: result.error };
+
+  await recordAudit({
+    actor: session.username,
+    action: "added administrator",
+    entityType: "admin",
+    entityId: result.id,
+    summary: username.trim(),
+  });
+  revalidatePath("/admin/team");
+  redirect("/admin/team?added=1");
+}
+
+export async function removeAdmin(formData: FormData): Promise<void> {
+  const session = await requireAdmin();
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+
+  // Removing your own account would sign you out mid-session.
+  const self = await findAdminByUsername(session.username);
+  if (self && self.id === id) {
+    redirect("/admin/team?error=self");
+  }
+
+  const result = await deleteAdmin(id);
+  if (!result.ok) {
+    redirect(`/admin/team?error=${encodeURIComponent(result.error)}`);
+  }
+
+  await recordAudit({
+    actor: session.username,
+    action: "removed administrator",
+    entityType: "admin",
+    entityId: id,
+    summary: result.username,
+  });
+  revalidatePath("/admin/team");
+  redirect("/admin/team?removed=1");
+}
+
+export async function changeOwnPassword(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const session = await requireAdmin();
+  const current = String(formData.get("currentPassword") ?? "");
+  const next = String(formData.get("newPassword") ?? "");
+
+  const verified = await verifyCredentials(session.username, current);
+  if (!verified.ok) {
+    return { status: "error", message: "Your current password is incorrect." };
+  }
+
+  const self = await findAdminByUsername(session.username);
+  if (!self) return { status: "error", message: "Account not found." };
+
+  const result = await setAdminPassword(self.id, next);
+  if (!result.ok) return { status: "error", message: result.error };
+
+  await recordAudit({
+    actor: session.username,
+    action: "changed own password",
+    entityType: "admin",
+    entityId: self.id,
+  });
+  redirect("/admin/team?password=1");
 }

@@ -7,7 +7,15 @@ import { parsePhone } from "@/lib/phone";
 export type ApplyState =
   | { status: "idle" }
   | { status: "error"; message: string }
-  | { status: "success"; name: string; phoneDisplay: string };
+  | {
+      status: "success";
+      name: string;
+      phoneDisplay: string;
+      /** "confirmed" means a seat is held; "waitlisted" means queued. */
+      outcome: "confirmed" | "waitlisted";
+      position: number | null;
+      withdrawToken: string;
+    };
 
 const REJECTION_MESSAGES: Record<string, string> = {
   not_found: "That class no longer exists.",
@@ -24,7 +32,7 @@ export async function submitApplication(
   const name = String(formData.get("name") ?? "")
     .trim()
     .replace(/\s+/g, " ");
-  const countryCode = String(formData.get("countryCode") ?? "");
+  const country = String(formData.get("country") ?? "");
   const localNumber = String(formData.get("phone") ?? "");
 
   if (!Number.isInteger(classId) || classId <= 0) {
@@ -37,7 +45,7 @@ export async function submitApplication(
     return { status: "error", message: "That name is too long (80 characters max)." };
   }
 
-  const phone = parsePhone(countryCode, localNumber);
+  const phone = parsePhone(country, localNumber);
   if ("error" in phone) {
     return { status: "error", message: phone.error };
   }
@@ -52,5 +60,12 @@ export async function submitApplication(
   revalidatePath("/admin");
   revalidatePath(`/admin/classes/${classId}`);
 
-  return { status: "success", name, phoneDisplay: phone.display };
+  return {
+    status: "success",
+    name,
+    phoneDisplay: phone.display,
+    outcome: result.status,
+    position: result.position,
+    withdrawToken: result.withdrawToken,
+  };
 }

@@ -3,31 +3,88 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { submitApplication, type ApplyState } from "@/app/actions/apply";
+import { CopyButton } from "@/components/copy-button";
 import { SubmitButton } from "@/components/form-buttons";
-import { COUNTRIES, DEFAULT_COUNTRY_CODE } from "@/lib/phone";
+import { COUNTRIES, DEFAULT_COUNTRY } from "@/lib/phone";
 
 const INITIAL: ApplyState = { status: "idle" };
+
+function WithdrawNotice({ token }: { token: string }) {
+  const url =
+    typeof window === "undefined"
+      ? `/withdraw/${token}`
+      : `${window.location.origin}/withdraw/${token}`;
+
+  return (
+    <div className="mt-5 rounded-lg border border-border bg-surface-muted p-4">
+      <p className="text-sm font-medium">Can&rsquo;t make it later on?</p>
+      <p className="mt-1 text-xs text-muted">
+        Keep this link — it lets you release your place without messaging anyone.
+      </p>
+      <code className="mt-3 block truncate rounded border border-border bg-surface px-2.5 py-1.5 font-mono text-xs">
+        {url}
+      </code>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <CopyButton value={url} className="btn-secondary px-3 py-1.5" />
+        <Link href={`/withdraw/${token}`} className="btn-secondary px-3 py-1.5">
+          Open
+        </Link>
+      </div>
+    </div>
+  );
+}
 
 export function ApplyForm({
   classId,
   classTitle,
+  waitlistOnly,
 }: {
   classId: number;
   classTitle: string;
+  waitlistOnly: boolean;
 }) {
   const [state, formAction] = useActionState(submitApplication, INITIAL);
 
   if (state.status === "success") {
+    const waitlisted = state.outcome === "waitlisted";
     return (
-      <div className="card border-emerald-500/40 bg-emerald-500/5 p-6">
-        <h2 className="text-lg font-semibold text-emerald-700 dark:text-emerald-400">
-          You&rsquo;re on the list
+      <div
+        className={`card p-6 ${
+          waitlisted
+            ? "border-sky-500/40 bg-sky-500/5"
+            : "border-emerald-500/40 bg-emerald-500/5"
+        }`}
+      >
+        <h2
+          className={`text-lg font-semibold ${
+            waitlisted
+              ? "text-sky-700 dark:text-sky-400"
+              : "text-emerald-700 dark:text-emerald-400"
+          }`}
+        >
+          {waitlisted ? "You're on the waitlist" : "You're on the list"}
         </h2>
+
         <p className="mt-2 text-sm">
-          Thanks {state.name} — your seat in <strong>{classTitle}</strong> is
-          reserved. We&rsquo;ll reach you on WhatsApp at{" "}
-          <span className="font-mono">{state.phoneDisplay}</span>.
+          {waitlisted ? (
+            <>
+              Thanks {state.name} — the class is full, so you&rsquo;re number{" "}
+              <strong>{state.position}</strong> in the queue for{" "}
+              <strong>{classTitle}</strong>. We&rsquo;ll message you on WhatsApp at{" "}
+              <span className="font-mono">{state.phoneDisplay}</span> if a seat
+              frees up.
+            </>
+          ) : (
+            <>
+              Thanks {state.name} — your seat in <strong>{classTitle}</strong> is
+              reserved. We&rsquo;ll reach you on WhatsApp at{" "}
+              <span className="font-mono">{state.phoneDisplay}</span>.
+            </>
+          )}
         </p>
+
+        <WithdrawNotice token={state.withdrawToken} />
+
         <Link href="/" className="btn-secondary mt-5">
           Back to all classes
         </Link>
@@ -38,9 +95,13 @@ export function ApplyForm({
   return (
     <form action={formAction} className="card space-y-5 p-6">
       <div>
-        <h2 className="text-lg font-semibold">Apply for a seat</h2>
+        <h2 className="text-lg font-semibold">
+          {waitlistOnly ? "Join the waitlist" : "Apply for a seat"}
+        </h2>
         <p className="mt-1 text-sm text-muted">
-          The instructor will contact you on WhatsApp to confirm.
+          {waitlistOnly
+            ? "This class is full. Join the queue and we'll message you on WhatsApp if a seat frees up."
+            : "The instructor will contact you on WhatsApp to confirm."}
         </p>
       </div>
 
@@ -68,14 +129,14 @@ export function ApplyForm({
         </label>
         <div className="flex gap-2">
           <select
-            name="countryCode"
-            defaultValue={DEFAULT_COUNTRY_CODE}
-            aria-label="Country code"
-            className="input w-36 shrink-0"
+            name="country"
+            defaultValue={DEFAULT_COUNTRY}
+            aria-label="Country"
+            className="input w-40 shrink-0"
           >
             {COUNTRIES.map((country) => (
-              <option key={country.code} value={country.code}>
-                {country.flag} +{country.code}
+              <option key={country.iso} value={country.iso}>
+                {country.flag} +{country.callingCode}
               </option>
             ))}
           </select>
@@ -105,7 +166,7 @@ export function ApplyForm({
       )}
 
       <SubmitButton pendingLabel="Submitting…" className="btn-primary w-full">
-        Submit application
+        {waitlistOnly ? "Join the waitlist" : "Submit application"}
       </SubmitButton>
     </form>
   );

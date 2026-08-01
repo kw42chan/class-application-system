@@ -86,8 +86,8 @@ SESSION_SECRET="${sessionSecret}"
 ADMIN_USERNAME="${username}"
 ADMIN_PASSWORD_HASH="${escapedHash}"
 
-# Country code pre-selected in the student application form.
-NEXT_PUBLIC_DEFAULT_COUNTRY_CODE="${existing.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE || "60"}"
+# Country pre-selected in the student application form (ISO code).
+NEXT_PUBLIC_DEFAULT_COUNTRY="${existing.NEXT_PUBLIC_DEFAULT_COUNTRY || "MY"}"
 `;
 
 writeFileSync(ENV_PATH, contents, "utf8");

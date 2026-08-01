@@ -4,11 +4,13 @@ import { createClient, type Client } from "@libsql/client";
 
 const url = process.env.DATABASE_URL ?? "file:./data/app.db";
 
-// A local `file:` database needs its parent folder to exist before libSQL opens it.
-if (url.startsWith("file:")) {
-  fs.mkdirSync(path.dirname(path.resolve(url.slice("file:".length))), {
-    recursive: true,
-  });
+/** Absolute path of the local database file, or null when using a remote (Turso) database. */
+export const localDbPath = url.startsWith("file:")
+  ? path.resolve(url.slice("file:".length))
+  : null;
+
+if (localDbPath) {
+  fs.mkdirSync(path.dirname(localDbPath), { recursive: true });
 }
 
 declare global {
@@ -22,42 +24,143 @@ export const db =
   createClient({ url, authToken: process.env.DATABASE_AUTH_TOKEN });
 globalThis.__casClient = db;
 
-const SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS classes (
-     id           INTEGER PRIMARY KEY AUTOINCREMENT,
-     title        TEXT    NOT NULL,
-     description  TEXT    NOT NULL DEFAULT '',
-     instructor   TEXT    NOT NULL DEFAULT '',
-     location     TEXT    NOT NULL DEFAULT '',
-     schedule     TEXT    NOT NULL DEFAULT '',
-     capacity     INTEGER NOT NULL,
-     is_open      INTEGER NOT NULL DEFAULT 0,
-     created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
-   )`,
-  `CREATE TABLE IF NOT EXISTS applications (
-     id            INTEGER PRIMARY KEY AUTOINCREMENT,
-     class_id      INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
-     name          TEXT    NOT NULL,
-     phone_e164    TEXT    NOT NULL,
-     phone_display TEXT    NOT NULL,
-     status        TEXT    NOT NULL DEFAULT 'confirmed',
-     created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
-   )`,
-  // Partial index: one active application per number per class, but a cancelled
-  // applicant is free to apply again.
-  `CREATE UNIQUE INDEX IF NOT EXISTS applications_active_phone
-     ON applications (class_id, phone_e164) WHERE status = 'confirmed'`,
-  `CREATE INDEX IF NOT EXISTS applications_class ON applications (class_id)`,
+/**
+ * Ordered schema migrations. Index 0 produces version 1, index 1 produces
+ * version 2, and so on. Only ever append — editing a released entry will not
+ * re-run against databases that already applied it.
+ */
+const MIGRATIONS: string[][] = [
+  // v1 — initial schema
+  [
+    `CREATE TABLE IF NOT EXISTS classes (
+       id           INTEGER PRIMARY KEY AUTOINCREMENT,
+       title        TEXT    NOT NULL,
+       description  TEXT    NOT NULL DEFAULT '',
+       instructor   TEXT    NOT NULL DEFAULT '',
+       location     TEXT    NOT NULL DEFAULT '',
+       schedule     TEXT    NOT NULL DEFAULT '',
+       capacity     INTEGER NOT NULL,
+       is_open      INTEGER NOT NULL DEFAULT 0,
+       created_at   TEXT    NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `CREATE TABLE IF NOT EXISTS applications (
+       id            INTEGER PRIMARY KEY AUTOINCREMENT,
+       class_id      INTEGER NOT NULL REFERENCES classes(id) ON DELETE CASCADE,
+       name          TEXT    NOT NULL,
+       phone_e164    TEXT    NOT NULL,
+       phone_display TEXT    NOT NULL,
+       status        TEXT    NOT NULL DEFAULT 'confirmed',
+       created_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS applications_active_phone
+       ON applications (class_id, phone_e164) WHERE status = 'confirmed'`,
+    `CREATE INDEX IF NOT EXISTS applications_class ON applications (class_id)`,
+  ],
+
+  // v2 — waitlist, self-withdrawal, admin accounts, audit log
+  [
+    `ALTER TABLE classes ADD COLUMN waitlist_enabled INTEGER NOT NULL DEFAULT 0`,
+    `ALTER TABLE applications ADD COLUMN withdraw_token TEXT`,
+    // A waitlisted applicant also occupies their number, so the uniqueness rule
+    // has to cover both active states — not just 'confirmed'.
+    `DROP INDEX IF EXISTS applications_active_phone`,
+    `CREATE UNIQUE INDEX applications_active_phone
+       ON applications (class_id, phone_e164)
+       WHERE status IN ('confirmed', 'waitlisted')`,
+    `CREATE UNIQUE INDEX applications_withdraw_token
+       ON applications (withdraw_token) WHERE withdraw_token IS NOT NULL`,
+    `CREATE INDEX applications_class_status
+       ON applications (class_id, status, id)`,
+    `CREATE TABLE admins (
+       id            INTEGER PRIMARY KEY AUTOINCREMENT,
+       username      TEXT    NOT NULL,
+       password_hash TEXT    NOT NULL,
+       created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+       created_by    TEXT    NOT NULL DEFAULT 'system'
+     )`,
+    `CREATE UNIQUE INDEX admins_username ON admins (lower(username))`,
+    `CREATE TABLE audit_log (
+       id          INTEGER PRIMARY KEY AUTOINCREMENT,
+       actor       TEXT    NOT NULL,
+       action      TEXT    NOT NULL,
+       entity_type TEXT    NOT NULL,
+       entity_id   INTEGER,
+       summary     TEXT    NOT NULL DEFAULT '',
+       created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `CREATE INDEX audit_log_created ON audit_log (id DESC)`,
+  ],
 ];
 
-async function migrate() {
+export const SCHEMA_VERSION = MIGRATIONS.length;
+
+async function readVersion(): Promise<number> {
+  const result = await db.execute("PRAGMA user_version");
+  return Number((result.rows[0] as Record<string, unknown>).user_version ?? 0);
+}
+
+/**
+ * Databases created before migrations existed sit at user_version 0 but already
+ * have the v1 tables. Stamp them as v1 so we don't try to recreate them.
+ */
+async function baselineVersion(): Promise<number> {
+  const version = await readVersion();
+  if (version > 0) return version;
+
+  const existing = await db.execute(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'classes'",
+  );
+  if (existing.rows.length === 0) return 0;
+
+  await db.execute("PRAGMA user_version = 1");
+  return 1;
+}
+
+async function migrate(): Promise<void> {
   await db.execute("PRAGMA foreign_keys = ON");
-  for (const statement of SCHEMA) {
-    await db.execute(statement);
+  // If another process holds the write lock (a second dev server, a backup),
+  // wait for it rather than failing the request outright.
+  await db.execute("PRAGMA busy_timeout = 5000");
+
+  let version = await baselineVersion();
+
+  while (version < MIGRATIONS.length) {
+    const statements = MIGRATIONS[version];
+    const target = version + 1;
+
+    for (const statement of statements) {
+      await db.execute(statement);
+    }
+    // PRAGMA cannot take a bound parameter; `target` is a loop counter we own.
+    await db.execute(`PRAGMA user_version = ${target}`);
+
+    version = target;
   }
 }
 
-/** Ensures the schema exists. Safe to call on every request; runs once. */
+/**
+ * Ensures the schema is up to date. Safe to call on every request; runs once.
+ * A failure clears the cached promise so the next request retries rather than
+ * wedging the process on a permanently rejected promise.
+ */
 export function ready(): Promise<void> {
-  return (globalThis.__casReady ??= migrate());
+  globalThis.__casReady ??= migrate().catch((error) => {
+    globalThis.__casReady = undefined;
+    throw error;
+  });
+  return globalThis.__casReady;
+}
+
+// A local SQLite file is driven through one connection, so overlapping write
+// transactions on it fail with SQLITE_BUSY rather than queueing. Funnelling
+// them through this chain serialises writes within the process — which is the
+// whole story for a single-server deployment, and harmless on Turso where the
+// database arbitrates concurrency itself.
+let writeChain: Promise<unknown> = Promise.resolve();
+
+export function withWriteLock<T>(operation: () => Promise<T>): Promise<T> {
+  // `then(op, op)` so a rejected predecessor doesn't stall the queue.
+  const result = writeChain.then(operation, operation);
+  writeChain = result.catch(() => undefined);
+  return result;
 }

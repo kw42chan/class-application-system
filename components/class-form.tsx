@@ -117,20 +117,38 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
         </p>
       </div>
 
-      <label className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4">
-        <input
-          type="checkbox"
-          name="isOpen"
-          defaultChecked={initial?.isOpen ?? false}
-          className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
-        />
-        <span>
-          <span className="block text-sm font-medium">Open for applications</span>
-          <span className="block text-xs text-muted">
-            When unchecked, students can see the class but cannot apply.
+      <div className="space-y-3">
+        <label className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4">
+          <input
+            type="checkbox"
+            name="isOpen"
+            defaultChecked={initial?.isOpen ?? false}
+            className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+          />
+          <span>
+            <span className="block text-sm font-medium">Open for applications</span>
+            <span className="block text-xs text-muted">
+              When unchecked, students can see the class but cannot apply.
+            </span>
           </span>
-        </span>
-      </label>
+        </label>
+
+        <label className="flex items-start gap-3 rounded-lg border border-border bg-surface-muted p-4">
+          <input
+            type="checkbox"
+            name="waitlistEnabled"
+            defaultChecked={initial?.waitlistEnabled ?? false}
+            className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+          />
+          <span>
+            <span className="block text-sm font-medium">Keep a waitlist when full</span>
+            <span className="block text-xs text-muted">
+              Once the limit is reached, students can still join a queue. You
+              promote them to a seat when someone cancels.
+            </span>
+          </span>
+        </label>
+      </div>
 
       {state.status === "error" && (
         <p

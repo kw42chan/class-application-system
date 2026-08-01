@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { SeatMeter, StatusPill } from "@/components/class-status";
-import { isAcceptingApplications, listClasses, type ClassRecord } from "@/lib/classes";
+import {
+  isAcceptingAnything,
+  isAcceptingWaitlist,
+  listClasses,
+  type ClassRecord,
+} from "@/lib/classes";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +31,8 @@ function ClassMeta({ cls }: { cls: ClassRecord }) {
 }
 
 function ClassCard({ cls }: { cls: ClassRecord }) {
-  const canApply = isAcceptingApplications(cls);
+  const canApply = isAcceptingAnything(cls);
+  const waitlistOnly = isAcceptingWaitlist(cls);
 
   return (
     <li className="card flex flex-col gap-4 p-5">
@@ -45,7 +51,7 @@ function ClassCard({ cls }: { cls: ClassRecord }) {
         <SeatMeter cls={cls} />
         {canApply ? (
           <Link href={`/classes/${cls.id}`} className="btn-primary w-full">
-            Apply for this class
+            {waitlistOnly ? "Join the waitlist" : "Apply for this class"}
           </Link>
         ) : (
           <Link href={`/classes/${cls.id}`} className="btn-secondary w-full">
