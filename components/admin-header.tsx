@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { logout } from '@/app/actions/admin';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeSwitcher } from './theme-switcher';
 
 const NAV = [
   { href: '/admin', label: 'Classes' },
@@ -30,6 +31,7 @@ export function AdminHeader({ username }: { username: string }) {
         </div>
 
         <div className="flex items-center gap-4 text-sm">
+          <ThemeSwitcher />
           <LanguageSwitcher />
           <Link
             href="/"

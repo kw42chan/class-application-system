@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useLanguage } from '@/lib/language-context';
 import { LanguageSwitcher } from './language-switcher';
+import { ThemeSwitcher } from './theme-switcher';
 
 export function StudentHeader() {
   const { t } = useLanguage();
@@ -16,6 +17,7 @@ export function StudentHeader() {
         <p className="mt-2 text-muted">{t('dashboard.subtitle')}</p>
       </div>
       <div className="flex flex-wrap items-center gap-4">
+        <ThemeSwitcher />
         <LanguageSwitcher />
         <Link
           href="/admin"
