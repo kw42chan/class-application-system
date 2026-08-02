@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { saveClass, type FormState } from '@/app/actions/admin';
 import { SubmitButton } from '@/components/form-buttons';
 import type { ClassRecord } from '@/lib/class-utils';
+import { useLanguage } from '@/lib/language-context';
 
-const INITIAL: FormState = { status: "idle" };
+const INITIAL: FormState = { status: 'idle' };
 
 export function ClassForm({ initial }: { initial?: ClassRecord }) {
+  const { t } = useLanguage();
   const [state, formAction] = useActionState(saveClass, INITIAL);
   const isEdit = Boolean(initial);
 
@@ -18,7 +20,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
 
       <div>
         <label htmlFor="title" className="label">
-          Class title <span className="text-red-500">*</span>
+          {t('admin.classTitle')} <span className="text-red-500">*</span>
         </label>
         <input
           id="title"
@@ -34,7 +36,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
 
       <div>
         <label htmlFor="description" className="label">
-          Description
+          {t('admin.description')}
         </label>
         <textarea
           id="description"
@@ -50,7 +52,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <div>
           <label htmlFor="instructor" className="label">
-            Instructor
+            {t('admin.instructor')}
           </label>
           <input
             id="instructor"
@@ -65,7 +67,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
 
         <div>
           <label htmlFor="schedule" className="label">
-            When
+            {t('admin.when')}
           </label>
           <input
             id="schedule"
@@ -81,7 +83,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
 
       <div>
         <label htmlFor="location" className="label">
-          Where
+          {t('admin.where')}
         </label>
         <input
           id="location"
@@ -96,7 +98,7 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
 
       <div>
         <label htmlFor="capacity" className="label">
-          Applicant limit <span className="text-red-500">*</span>
+          {t('admin.applicantLimit')} <span className="text-red-500">*</span>
         </label>
         <input
           id="capacity"
@@ -110,9 +112,9 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
           className="input sm:w-40"
         />
         <p className="mt-1.5 text-xs text-muted">
-          Applications stop automatically once this many students have applied.
+          {t('admin.applicantLimitHelp')}
           {initial && initial.applicantCount > 0 && (
-            <> Currently {initial.applicantCount} applied.</>
+            <> {t('admin.currentlyApplied')} {initial.applicantCount} {t('admin.applied')}.</>
           )}
         </p>
       </div>
@@ -126,9 +128,9 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
             className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
           />
           <span>
-            <span className="block text-sm font-medium">Open for applications</span>
+            <span className="block text-sm font-medium">{t('admin.openForApplications')}</span>
             <span className="block text-xs text-muted">
-              When unchecked, students can see the class but cannot apply.
+              {t('admin.openForApplicationsHelp')}
             </span>
           </span>
         </label>
@@ -141,10 +143,9 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
             className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
           />
           <span>
-            <span className="block text-sm font-medium">Keep a waitlist when full</span>
+            <span className="block text-sm font-medium">{t('admin.keepWaitlist')}</span>
             <span className="block text-xs text-muted">
-              Once the limit is reached, students can still join a queue. You
-              promote them to a seat when someone cancels.
+              {t('admin.keepWaitlistHelp')}
             </span>
           </span>
         </label>
@@ -160,11 +161,11 @@ export function ClassForm({ initial }: { initial?: ClassRecord }) {
       )}
 
       <div className="flex flex-wrap gap-3">
-        <SubmitButton pendingLabel="Saving…">
-          {isEdit ? "Save changes" : "Create class"}
+        <SubmitButton pendingLabel={t('admin.saving')}>
+          {isEdit ? t('admin.saveChanges') : t('admin.createClass')}
         </SubmitButton>
         <Link href="/admin" className="btn-secondary">
-          Cancel
+          {t('btn.cancel')}
         </Link>
       </div>
     </form>
