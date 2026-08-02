@@ -1,5 +1,6 @@
 @import "tailwindcss";
 
+/* Light theme (default) */
 :root {
   --background: #f6f7f9;
   --surface: #ffffff;
@@ -12,8 +13,9 @@
   --whatsapp: #1fa855;
 }
 
+/* Dark theme - auto detect from system preference */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --background: #0c0e13;
     --surface: #14171e;
     --surface-muted: #1b1f28;
@@ -24,6 +26,32 @@
     --brand-contrast: #0c0e13;
     --whatsapp: #25d366;
   }
+}
+
+/* Dark theme - manual override */
+:root[data-theme="dark"] {
+  --background: #0c0e13;
+  --surface: #14171e;
+  --surface-muted: #1b1f28;
+  --border: #272c37;
+  --foreground: #edeff3;
+  --muted: #9aa3b2;
+  --brand: #7c74ff;
+  --brand-contrast: #0c0e13;
+  --whatsapp: #25d366;
+}
+
+/* Light theme - manual override */
+:root[data-theme="light"] {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f1f3f6;
+  --border: #e2e5ea;
+  --foreground: #14171f;
+  --muted: #626b7b;
+  --brand: #4f46e5;
+  --brand-contrast: #ffffff;
+  --whatsapp: #1fa855;
 }
 
 @theme inline {

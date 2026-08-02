@@ -74,7 +74,7 @@ function resolveDefaultCountry(): string {
   const legacy = process.env.NEXT_PUBLIC_DEFAULT_COUNTRY_CODE;
   if (legacy && LEGACY_CODE_TO_ISO[legacy]) return LEGACY_CODE_TO_ISO[legacy];
 
-  return "MY";
+  return "HK";
 }
 
 export const DEFAULT_COUNTRY = resolveDefaultCountry();
