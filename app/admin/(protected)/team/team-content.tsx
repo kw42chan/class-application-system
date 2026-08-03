@@ -3,7 +3,7 @@
 import { removeAdmin } from '@/app/actions/admin';
 import { ConfirmSubmitButton } from '@/components/form-buttons';
 import { useLanguage } from '@/lib/language-context';
-import { type Admin } from '@/lib/admins';
+import { type AdminRecord } from '@/lib/admins';
 import { AddAdminForm, ChangePasswordForm } from './admin-forms';
 
 function formatWhen(value: string) {
@@ -17,7 +17,7 @@ export function TeamContent({
   currentUsername,
   notice,
 }: {
-  admins: Admin[];
+  admins: AdminRecord[];
   currentUsername: string;
   notice: { tone: 'ok' | 'warn'; text: string } | null;
 }) {
