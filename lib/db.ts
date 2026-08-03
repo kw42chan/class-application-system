@@ -94,13 +94,50 @@ const MIGRATIONS: string[][] = [
 
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
+/**
+ * Turso speaks a restricted dialect over its remote protocol: statements that
+ * configure a connection are rejected outright, so the schema version lives in
+ * an ordinary table there instead of in `user_version`.
+ */
+const isRemote = localDbPath === null;
+
+const VERSION_KEY = "schema_version";
+
 async function readVersion(): Promise<number> {
+  if (isRemote) {
+    await db.execute(
+      `CREATE TABLE IF NOT EXISTS schema_meta (
+         key   TEXT PRIMARY KEY,
+         value TEXT NOT NULL
+       )`,
+    );
+    const result = await db.execute({
+      sql: "SELECT value FROM schema_meta WHERE key = ?",
+      args: [VERSION_KEY],
+    });
+    const row = result.rows[0] as Record<string, unknown> | undefined;
+    return row ? Number(row.value ?? 0) : 0;
+  }
+
   const result = await db.execute("PRAGMA user_version");
   return Number((result.rows[0] as Record<string, unknown>).user_version ?? 0);
 }
 
+async function writeVersion(version: number): Promise<void> {
+  if (isRemote) {
+    await db.execute({
+      sql: `INSERT INTO schema_meta (key, value) VALUES (?, ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+      args: [VERSION_KEY, String(version)],
+    });
+    return;
+  }
+  // PRAGMA cannot take a bound parameter; `version` is a counter we own.
+  await db.execute(`PRAGMA user_version = ${version}`);
+}
+
 /**
- * Databases created before migrations existed sit at user_version 0 but already
+ * Databases created before migrations existed sit at version 0 but already
  * have the v1 tables. Stamp them as v1 so we don't try to recreate them.
  */
 async function baselineVersion(): Promise<number> {
@@ -112,15 +149,18 @@ async function baselineVersion(): Promise<number> {
   );
   if (existing.rows.length === 0) return 0;
 
-  await db.execute("PRAGMA user_version = 1");
+  await writeVersion(1);
   return 1;
 }
 
 async function migrate(): Promise<void> {
   await db.execute("PRAGMA foreign_keys = ON");
   // If another process holds the write lock (a second dev server, a backup),
-  // wait for it rather than failing the request outright.
-  await db.execute("PRAGMA busy_timeout = 5000");
+  // wait for it rather than failing the request outright. This configures the
+  // one local connection; Turso rejects it and arbitrates concurrency itself.
+  if (!isRemote) {
+    await db.execute("PRAGMA busy_timeout = 5000");
+  }
 
   let version = await baselineVersion();
 
@@ -131,8 +171,7 @@ async function migrate(): Promise<void> {
     for (const statement of statements) {
       await db.execute(statement);
     }
-    // PRAGMA cannot take a bound parameter; `target` is a loop counter we own.
-    await db.execute(`PRAGMA user_version = ${target}`);
+    await writeVersion(target);
 
     version = target;
   }
