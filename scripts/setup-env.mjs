@@ -87,7 +87,7 @@ ADMIN_USERNAME="${username}"
 ADMIN_PASSWORD_HASH="${escapedHash}"
 
 # Country pre-selected in the student application form (ISO code).
-NEXT_PUBLIC_DEFAULT_COUNTRY="${existing.NEXT_PUBLIC_DEFAULT_COUNTRY || "MY"}"
+NEXT_PUBLIC_DEFAULT_COUNTRY="${existing.NEXT_PUBLIC_DEFAULT_COUNTRY || "HK"}"
 `;
 
 writeFileSync(ENV_PATH, contents, "utf8");
